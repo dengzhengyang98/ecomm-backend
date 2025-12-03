@@ -1,0 +1,32 @@
+name: Deploy Backend (Lambda)
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+
+jobs:
+  deploy-lambda:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Zip and Deploy Lambda
+      run: |
+        # 💡 SIMPLIFIED: Zips all files in the current directory (the repo root)
+        # This will include lambda_function.py, system_prompt.txt, and any future files.
+        zip -r function.zip .
+        
+        # Update the function code
+        aws lambda update-function-code \
+          --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
+          --zip-file fileb://function.zip
