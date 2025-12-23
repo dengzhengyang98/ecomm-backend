@@ -32,6 +32,18 @@ TEMPLATE = """产品标题：
 产品描述：
 {title}
 {description}
+
+亚马逊平均价格：
+{amazon_avg_price}
+
+亚马逊最低价格：
+{amazon_min_price}
+
+亚马逊最低价格产品：
+{amazon_min_price_product}
+
+速卖通建议价格：
+{ali_express_rec_price}
 """
 
 # --- NEW: Forbidden Word Check Function ---
@@ -129,7 +141,11 @@ def lambda_handler(event, context):
     final_text = TEMPLATE.format(
         title=structured.get("title", ""),
         bullet_point=structured.get("bullet_point", ""),
-        description=structured.get("description", "")
+        description=structured.get("description", ""),
+        amazon_avg_price=structured.get("amazon_avg_price", "N/A"),
+        amazon_min_price=structured.get("amazon_min_price", "N/A"),
+        amazon_min_price_product=structured.get("amazon_min_price_product", "N/A"),
+        ali_express_rec_price=structured.get("ali_express_rec_price", "N/A")
         )
 
     # 在最后返回时确保包含这些头
