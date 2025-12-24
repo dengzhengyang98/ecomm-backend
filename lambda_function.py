@@ -42,6 +42,9 @@ TEMPLATE = """产品标题：
 亚马逊最低价格产品：
 {amazon_min_price_product}
 
+亚马逊最低价格产品链接：
+{amazon_min_price_product_url}
+
 速卖通建议价格：
 {ali_express_rec_price}
 """
@@ -145,6 +148,7 @@ def lambda_handler(event, context):
         amazon_avg_price=structured.get("amazon_avg_price", "N/A"),
         amazon_min_price=structured.get("amazon_min_price", "N/A"),
         amazon_min_price_product=structured.get("amazon_min_price_product", "N/A"),
+        amazon_min_price_product_url=structured.get("amazon_min_price_product_url", "N/A"),
         ali_express_rec_price=structured.get("ali_express_rec_price", "N/A")
         )
 
