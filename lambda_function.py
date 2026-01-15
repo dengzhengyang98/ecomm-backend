@@ -136,7 +136,8 @@ FORBIDDEN_ORIGIN = [
     "origin",
     "made in china",
     "mainland china",
-    "cn"
+    "cn",
+    "OEM"
 ]
 
 # =========================
