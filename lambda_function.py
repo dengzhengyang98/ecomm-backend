@@ -1,11 +1,168 @@
 import json
 import boto3
 import os
+import re
 
 bedrock = boto3.client("bedrock-runtime")
 
 # --- NEW: Forbidden Word List ---
 FORBIDDEN_RETURN_WORD = ["prompt", "assistant", "json"]
+
+# =========================
+# Absolute / Definitive claims
+# =========================
+FORBIDDEN_ABSOLUTE = [
+    "100%",
+    "100 percent",
+    "percent",
+    "definitely",
+    "definitive",
+    "absolute",
+    "absolutely",
+    "totally",
+    "completely"
+]
+
+# =========================
+# Quality / branding claims
+# =========================
+FORBIDDEN_QUALITY = [
+    "brand",
+    "high quality",
+    "top quality",
+    "premium",
+    "new",
+    "perfect",
+    "perfectly"
+]
+
+# =========================
+# Promotion / sales language
+# =========================
+FORBIDDEN_PROMOTIONAL = [
+    "best-selling",
+    "best selling",
+    "bestselling",
+    "top-selling",
+    "top selling",
+    "topselling",
+    "promotion",
+    "promotional"
+]
+
+# =========================
+# Material / technology (ABS 特例你已在逻辑里处理)
+# =========================
+FORBIDDEN_MATERIAL = [
+    "led",
+    "uv",
+    "ultraviolet",
+    "hid",
+    "laser",
+    "plexiglas"
+]
+
+# =========================
+# Smell / gas / pollution
+# =========================
+FORBIDDEN_SMELL = [
+    "smell",
+    "odor",
+    "odour",
+    "gas",
+    "pollution",
+    "fresh",
+    "dirty",
+    "stinky"
+]
+
+# =========================
+# Insects (图片强调：任何“虫”都不允许)
+# =========================
+FORBIDDEN_INSECT = [
+    "insect",
+    "insects",
+    "bug",
+    "bugs",
+    "worm",
+    "worms",
+    "ant",
+    "ants",
+    "cockroach",
+    "cockroaches",
+    "mosquito",
+    "mosquitoes",
+    "fly",
+    "flies"
+]
+
+# =========================
+# Review / inducement / service
+# =========================
+FORBIDDEN_GUIDING = [
+    "good review",
+    "bad review",
+    "free",
+    "service",
+    "duty",
+    "tax"
+]
+
+# =========================
+# Logistics / shipping
+# =========================
+FORBIDDEN_LOGISTICS = [
+    "delivery time",
+    "free shipping",
+    "fast shipping",
+    "express delivery",
+    "express shipping"
+]
+
+# =========================
+# URLs (你已有正则清理，这里兜底)
+# =========================
+FORBIDDEN_URL = [
+    "http://",
+    "https://",
+    "www."
+]
+
+# =========================
+# Origin / originality (图片要求直接删除)
+# =========================
+FORBIDDEN_ORIGIN = [
+    "original",
+    "origin",
+    "made in china",
+    "mainland china",
+    "cn"
+]
+
+# =========================
+# External certification
+# =========================
+FORBIDDEN_CERTIFICATION = [
+    "external testing certification"
+]
+
+# =========================
+# ALL FORBIDDEN WORDS
+# =========================
+FORBIDDEN_WORDS_ALL = (
+    FORBIDDEN_ABSOLUTE +
+    FORBIDDEN_QUALITY +
+    FORBIDDEN_PROMOTIONAL +
+    FORBIDDEN_MATERIAL +
+    FORBIDDEN_SMELL +
+    FORBIDDEN_INSECT +
+    FORBIDDEN_GUIDING +
+    FORBIDDEN_LOGISTICS +
+    FORBIDDEN_URL +
+    FORBIDDEN_ORIGIN +
+    FORBIDDEN_CERTIFICATION
+)
+
 
 # --- Function to read the prompt from the file ---
 def load_system_prompt():
@@ -48,6 +205,127 @@ TEMPLATE = """产品标题：
 速卖通建议价格：
 {ali_express_rec_price}
 """
+
+# --- Special Pattern Removal Functions ---
+def remove_special_patterns(text):
+    """
+    Remove special patterns that are forbidden:
+    - URLs/website links
+    - Single letter M surrounded by spaces (e.g., " M ", "【 M 】")
+    - Mercedes Benz (keep only "奔驰Benz" if present)
+    - Volkswagen (replace with VW, or delete if "Volkswagen VW" appears)
+    - Origin information like "Origin: Mainland China CN"
+    - Competitor disparaging text
+    """
+    if not text:
+        return text
+    
+    # Remove URLs (http://, https://, www.)
+    text = re.sub(r'https?://[^\s]+', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'www\.[^\s]+', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*', '', text)  # Generic domain patterns
+    
+    # Remove single letter M surrounded by spaces or brackets
+    # Match: " M ", "【 M 】", "（ M ）", etc.
+    text = re.sub(r'[【（(\[]\s*M\s*[】）)\]]', '', text)
+    text = re.sub(r'\s+M\s+', ' ', text)  # Space-surrounded M
+    text = re.sub(r'^\s*M\s+', '', text)  # M at start
+    text = re.sub(r'\s+M\s*$', '', text)  # M at end
+    
+    # Handle Mercedes Benz - delete all occurrences, but keep "奔驰Benz" if it exists separately
+    # Remove "Mercedes Benz", "Mercedes", "梅赛德斯Mercedes" but keep standalone "奔驰Benz"
+    text = re.sub(r'mercedes\s*benz', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'mercedes', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'梅赛德斯\s*mercedes', '', text, flags=re.IGNORECASE)
+    
+    # Handle Volkswagen - replace with VW, or delete if "Volkswagen VW" appears together
+    if re.search(r'volkswagen\s+vw', text, re.IGNORECASE):
+        text = re.sub(r'volkswagen\s+', '', text, flags=re.IGNORECASE)
+    else:
+        text = re.sub(r'\bvolkswagen\b', 'VW', text, flags=re.IGNORECASE)
+    
+    # Remove origin information patterns
+    text = re.sub(r'origin\s*:\s*mainland\s*china\s*cn', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'origin\s*:\s*mainland\s*china', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'原产地\s*:\s*mainland\s*china\s*cn', '', text, flags=re.IGNORECASE)
+    
+    # Remove "Original" standalone word
+    text = re.sub(r'\boriginal\b', '', text, flags=re.IGNORECASE)
+    
+    # Remove competitor disparaging patterns (simplified - look for common patterns)
+    # Patterns like "better than other stores", "superior to other brands", etc.
+    disparaging_patterns = [
+        r'superior\s+to\s+other',
+        r'better\s+than\s+other',
+        r'quality\s+is\s+superior\s+to\s+other',
+        r'better\s+quality\s+than\s+other'
+    ]
+    for pattern in disparaging_patterns:
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+    
+    # Clean up multiple spaces
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
+    
+    return text
+
+
+def filter_forbidden_words(text, field_type="description"):
+    """
+    Filter forbidden words from text based on field type.
+    
+    Args:
+        text: The text to filter
+        field_type: Either "bullet_point" or "description"
+    
+    Returns:
+        Filtered text with forbidden words removed
+    """
+    if text is None:
+        return None
+    if not text:
+        return text
+    
+    # First, apply special pattern removal
+    text = remove_special_patterns(text)
+    
+    # Convert to lowercase for case-insensitive matching
+    text_lower = text.lower()
+    original_text = text
+    words_to_remove = []
+    
+    # Check all forbidden words
+    for forbidden_word in FORBIDDEN_WORDS_ALL:
+        # Case-insensitive search
+        if forbidden_word.lower() in text_lower:
+            words_to_remove.append(forbidden_word)
+    
+    # Special rule: ABS is forbidden in bullet_point but allowed in description
+    if field_type == "bullet_point":
+        if "abs" in text_lower:
+            # Remove ABS from bullet_point
+            text = re.sub(r'\babs\b', '', text, flags=re.IGNORECASE)
+    
+    # Remove forbidden words (case-insensitive)
+    for word in words_to_remove:
+        # Use word boundaries to avoid partial matches where appropriate
+        # For multi-word phrases, use simple replacement
+        if ' ' in word:
+            # Multi-word phrase - replace directly
+            pattern = re.escape(word)
+            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+        else:
+            # Single word - use word boundaries for better matching
+            pattern = r'\b' + re.escape(word) + r'\b'
+            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+    
+    # Clean up multiple spaces and newlines
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'\n\s*\n', '\n', text)  # Remove multiple newlines
+    text = text.strip()
+    
+    return text
+
 
 # --- NEW: Forbidden Word Check Function ---
 def check_forbidden_words(structured_data, forbidden_list):
@@ -139,6 +417,19 @@ def lambda_handler(event, context):
         }
     # ---------------------------------------------
 
+    # --- Filter forbidden words from bullet_point and description ---
+    if "bullet_point" in structured:
+        structured["bullet_point"] = filter_forbidden_words(
+            structured["bullet_point"], 
+            field_type="bullet_point"
+        )
+    
+    if "description" in structured:
+        structured["description"] = filter_forbidden_words(
+            structured["description"], 
+            field_type="description"
+        )
+    # ----------------------------------------------------------------
 
     # 使用模板填充
     final_text = TEMPLATE.format(
@@ -166,3 +457,4 @@ def lambda_handler(event, context):
             "result_structured": structured
         })
     }
+
