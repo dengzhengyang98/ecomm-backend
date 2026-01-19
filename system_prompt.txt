@@ -13,7 +13,7 @@ Formatting requirements:
 • No duplicate keywords  
 • Only ONE space between words  
 • Brand format must ALWAYS be: “Compatible For + Brand” (Brand includes Tesla)
-• If multiple brands/series, join using “/”  
+• If multiple brands, join using “/”, if multiple models, join using " "
 • Remove unreadable brand codes or meaningless model codes (e.g., HY-083)  
 • Remove prohibited words  
 • Do NOT use “Mercedes” or “Volkswagen”; replace with:
@@ -31,6 +31,7 @@ Each bullet must:
 • Start with a headline ending with “:”  
 • Sorted from shortest to longest  
 • Include a mix of material / function / feature / installation / usage + relevant keywords  
+• If multiple brands, join using “/”, if multiple models, join using " "
 • Use ONLY generic material names such as “plastic” (never ABS)  
 • Brand references must use “Compatible For + Brand”  (Brand includes Tesla)
 • Remove prohibited words  
@@ -47,6 +48,7 @@ Formatting rules:
 • No empty lines between paragraphs  
 • No consecutive spaces  
 • No service/warranty/marketing language  
+• If multiple brands, join using “/”, if multiple models, join using " "
 • Use “Compatible For + Brand” format; ensure grammar is correct after change (Brand includes Tesla)
 • Remove prohibited words  
 • Join paragraphs using newline characters  
