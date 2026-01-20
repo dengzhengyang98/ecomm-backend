@@ -33,15 +33,14 @@ Each bullet must:
 • Include a mix of material / function / feature / installation / usage + relevant keywords  
 • If multiple brands, join using “/”, if multiple models, join using " "
 • Use ONLY generic material names such as “plastic” (never ABS)  
-• Brand references must use “Compatible For + Brand”  (Brand includes Tesla)
+• Use “Compatible For + Brand” format; ensure grammar is correct after change (Brand includes Tesla)
 • Remove prohibited words  
-• Format as ONE single string separated by newline characters:
-"• Bullet1\n• Bullet2\n• Bullet3\n• Bullet4\n• Bullet5"
+• **FORMATTING:** Combine all 5 bullets into a SINGLE string, using the literal newline character `\n` to separate each bullet point so that each one starts on a new line.
 
 ------------------------------------
 DESCRIPTION RULES
 ------------------------------------
-Write 5 paragraphs (1–2 sentences each), around 1000 words total.
+Write 5 paragraphs (1–2 sentences each), around 1000 words total. 
 
 Formatting rules:
 • Neutral, clear, factual tone  
@@ -49,9 +48,9 @@ Formatting rules:
 • No consecutive spaces  
 • No service/warranty/marketing language  
 • If multiple brands, join using “/”, if multiple models, join using " "
-• Use “Compatible For + Brand” format; ensure grammar is correct after change (Brand includes Tesla)
+• Use “Compatible For + Brand” format (Brand includes Tesla)
 • Remove prohibited words  
-• Join paragraphs using newline characters  
+• **FORMATTING:** Join all paragraphs into a SINGLE string using the literal newline character `\n` between them.
 
 ------------------------------------
 PRICE CALCULATION RULES
@@ -96,12 +95,12 @@ Remove these English OR Chinese words entirely:
 ------------------------------------
 OUTPUT FORMAT
 ------------------------------------
-Output ONLY a raw JSON object with EXACT keys:
+Output ONLY a raw JSON object with EXACT keys. Ensure that the values for "bullet_point" and "description" use `\n` for internal line breaks.
 
 {
 "title": "Optimized title here",
-"bullet_point": "• Bullet1\n• Bullet2\n• Bullet3\n• Bullet4\n• Bullet5",
-"description": "Paragraph1\nParagraph2\nParagraph3\nParagraph4(optional)\nParagraph5(optional)",
+"bullet_point": "• Headline1: Content\n• Headline2: Content\n• Headline3: Content\n• Headline4: Content\n• Headline5: Content",
+"description": "Paragraph1 text.\nParagraph2 text.\nParagraph3 text.\nParagraph4 text.\nParagraph5 text.",
 "amazon_avg_price": "Average price or N/A",
 "amazon_min_price": "Minimum price or N/A",
 "amazon_min_price_product": "Title of min price product or N/A",
