@@ -226,12 +226,22 @@ def remove_special_patterns(text):
     text = re.sub(r'www\.[^\s]+', '', text, flags=re.IGNORECASE)
     text = re.sub(r'[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*', '', text)  # Generic domain patterns
     
-    # Remove single letter M surrounded by spaces or brackets
-    # Match: " M ", "【 M 】", "（ M ）", etc.
+    # Remove single letter M (standalone M, not part of words like "Model" or "BMW")
+    # Match: " M ", "M ", " M", "【 M 】", "（ M ）", etc.
+    # But NOT: "BMW", "Model", "M3", "M-123", etc.
+    
+    # First remove M in brackets
     text = re.sub(r'[【（(\[]\s*M\s*[】）)\]]', '', text)
-    text = re.sub(r'\s+M\s+', ' ', text)  # Space-surrounded M
-    text = re.sub(r'^\s*M\s+', '', text)  # M at start
-    text = re.sub(r'\s+M\s*$', '', text)  # M at end
+    
+    # Remove standalone M with word boundaries (but not if it's part of a word or followed by number/letter)
+    # Pattern: word boundary + M + word boundary (but M must be standalone, not M3, M-123, etc.)
+    # This matches: " M ", " M.", " M,", " M:", "M ", "M.", etc.
+    text = re.sub(r'\bM\b(?![0-9A-Za-z-])', '', text)  # Remove standalone M not followed by alphanumeric or hyphen
+    
+    # Also handle cases where M is at start/end with spaces
+    text = re.sub(r'^\s*M\s+', '', text)  # M at start followed by space
+    text = re.sub(r'\s+M\s*$', '', text)  # M at end preceded by space
+    text = re.sub(r'^\s*M\s*$', '', text)  # M alone on a line
     
     # Handle Mercedes Benz - delete all occurrences, but keep "奔驰Benz" if it exists separately
     # Remove "Mercedes Benz", "Mercedes", "梅赛德斯Mercedes" but keep standalone "奔驰Benz"
@@ -429,7 +439,14 @@ def lambda_handler(event, context):
         }
     # ---------------------------------------------
 
-    # --- Filter forbidden words from bullet_point and description ---
+    # --- Apply special pattern removal and filter forbidden words to all text fields ---
+    # Note: filter_forbidden_words internally calls remove_special_patterns, so we don't need to call it separately
+    if "title" in structured:
+        structured["title"] = filter_forbidden_words(
+            structured["title"], 
+            field_type="description"  # Use description type for title
+        )
+    
     if "bullet_point" in structured:
         structured["bullet_point"] = filter_forbidden_words(
             structured["bullet_point"], 
