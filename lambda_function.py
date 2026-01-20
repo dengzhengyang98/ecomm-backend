@@ -264,8 +264,14 @@ def remove_special_patterns(text):
     for pattern in disparaging_patterns:
         text = re.sub(pattern, '', text, flags=re.IGNORECASE)
     
-    # Clean up multiple spaces
-    text = re.sub(r'\s+', ' ', text)
+    # Clean up multiple spaces but preserve newlines
+    # Replace multiple spaces/tabs (but not newlines) with single space
+    text = re.sub(r'[ \t]+', ' ', text)  # Only replace spaces and tabs, not newlines
+    # Clean up multiple consecutive newlines (keep single newline)
+    text = re.sub(r'\n\s*\n+', '\n', text)  # Multiple newlines -> single newline
+    # Clean up spaces around newlines
+    text = re.sub(r' +\n', '\n', text)  # Remove spaces before newline
+    text = re.sub(r'\n +', '\n', text)  # Remove spaces after newline
     text = text.strip()
     
     return text
@@ -320,9 +326,14 @@ def filter_forbidden_words(text, field_type="description"):
             pattern = r'\b' + re.escape(word) + r'\b'
             text = re.sub(pattern, '', text, flags=re.IGNORECASE)
     
-    # Clean up multiple spaces and newlines
-    text = re.sub(r'\s+', ' ', text)
-    text = re.sub(r'\n\s*\n', '\n', text)  # Remove multiple newlines
+    # Clean up multiple spaces but preserve newlines
+    # Replace multiple spaces (but not newlines) with single space
+    text = re.sub(r'[ \t]+', ' ', text)  # Only replace spaces and tabs, not newlines
+    # Clean up multiple consecutive newlines (keep single newline)
+    text = re.sub(r'\n\s*\n+', '\n', text)  # Multiple newlines -> single newline
+    # Clean up spaces around newlines
+    text = re.sub(r' +\n', '\n', text)  # Remove spaces before newline
+    text = re.sub(r'\n +', '\n', text)  # Remove spaces after newline
     text = text.strip()
     
     return text
